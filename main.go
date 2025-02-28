@@ -9,7 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-
+    "golang.org/x/crypto/bcrypt"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -95,6 +95,13 @@ func main() {
         fmt.Println("  Username:", username)
         fmt.Println("  Password:", password)
 
+        hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+        if err != nil {
+            http.Error(w, "Error hashing password", http.StatusInternalServerError)
+            fmt.Println("error hasing password")
+            return
+        }
+
         var existingUsername string
         err = db.QueryRow("SELECT username FROM accounts WHERE username = ?", username).Scan(&existingUsername)
         if err == nil {
@@ -109,7 +116,7 @@ func main() {
         }
 
         // Create new account
-        res, err = db.Exec(dbCreateAccount, name, username, password)
+        res, err = db.Exec(dbCreateAccount, name, username, hashedPassword)
         if err != nil {
             http.Error(w, `{"error": "Failed to create account"}`, http.StatusInternalServerError)
             return
