@@ -57,6 +57,13 @@
         }
         .profile-details {
         }
+
+        .edit-profile-sep {
+          height: 25px;
+        }
+        #edit-profile {
+          float: right;
+        }
         .post {
             background-color: #1a1a1a;
             padding: 15px;
@@ -64,38 +71,88 @@
             border-radius: 10px;
         }
         a {
-            color: #1d9bf0;
+            color: #fff;
             text-decoration: none;
+            display: block;
+            padding: 10px 0;
+            margin: 5px 0;
+        }
+        a:hover {
+            background-color: #1a1a1a;
+            color: #1d9bf0;
+        }
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            margin: 5px 0;
+        }
+        .nav-icon {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+        .notification-badge {
+            background-color: #1d9bf0;
+            color: #000;
+            border-radius: 10px;
+            padding: 2px 6px;
+            font-size: 12px;
+            margin-left: 5px;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="sidebar">
-            <h3>Inicio</h3>
-            <ul>
-                <li>Explorar</li>
-                <li>Notificaciones</li>
-                <li>Mensajes</li>
-                <li>Guardados</li>
-                <li>Comunidades</li>
-                <li>Premium</li>
-                <li>Organizaciones</li>
-                <li>Perfil</li>
-                <li>Más opciones</li>
-            </ul>
-            <button>Postear</button>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">🏠</span> Inicio
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">🔍</span> Explorar
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">🔔</span> Notificaciones
+                <span class="notification-badge">18</span>
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">✉️</span> Mensajes
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">🤖</span> Grok
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">📌</span> Guardados
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">👥</span> Comunidades
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">⭐</span> Premium
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">⚡</span> Organizaciones v...
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">👤</span> Perfil
+            </a>
+            <a href="#" class="nav-item">
+                <span class="nav-icon">⋯</span> Más opciones
+            </a>
+            <!-- If you want a "Postear" button like in X, it could be a floating action button elsewhere, but I removed it from the sidebar as per your image:
+            <button style="position: fixed; bottom: 20px; right: 20px;">Postear</button> -->
         </div>
 
         <div class="main-content">
             <div class="profile-header">
                 <div class="profile-banner"></div>
                 <div class="profile-pic"></div>
+                <div class="edit-profile-sep">
+                    <button id="edit-profile">Editar perfil</button>
+                </div>
                 <div class="profile-details">
                     <h1>Sebastian Ramirez</h1>
                     <p>@ssbsnmrz | Venezuela | Se unió en julio de 2020</p>
                     <p>247 Siguiendo | 5 Seguidores</p>
-                    <button>Editar perfil</button>
                 </div>
             </div>
             <div class="posts">
