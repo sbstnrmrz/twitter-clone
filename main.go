@@ -13,10 +13,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func mainPageHandler(w http.ResponseWriter, r *http.Request) {
-    http.ServeFile(w, r, "index.html")
-}
-
 type PageData struct {
     ErrorMessage string
 }
@@ -55,17 +51,57 @@ func main() {
     http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
         tmpl.Execute(w, nil)
     })
+
     http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-        if r.Method == "POST" {
-    
+        if r.Method != "POST" {
+            http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+            return
         }
 
-        r.ParseForm()
+        //      for debug
+        //      body, _ := io.ReadAll(r.Body)
+        //      fmt.Println("Raw request body:", string(body))
+
+        err := r.ParseMultipartForm(10 << 20)
+        if err != nil {
+            fmt.Println(err);
+            w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+            http.Error(w, `{"error": "Invalid form data"}`, http.StatusBadRequest)
+            return
+        }
+
         username := r.FormValue("username")
         password := r.FormValue("password")
 
         fmt.Println("Username",username)
         fmt.Println("Password",password)
+
+        var storedHashedPassword string
+        err = db.QueryRow("SELECT password FROM accounts WHERE username = ?", username).Scan(&storedHashedPassword)
+
+        if err == sql.ErrNoRows {
+            // Username not found
+//          http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+            json.NewEncoder(w).Encode(map[string]string{"error": "Invalid username or password"})
+            return
+        } else if err != nil {
+            // Database error
+            http.Error(w, "Database error", http.StatusInternalServerError)
+
+            return
+        }
+
+        err = bcrypt.CompareHashAndPassword([]byte(storedHashedPassword), []byte(password))
+        if err != nil {
+//          http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+            json.NewEncoder(w).Encode(map[string]string{"error": "Invalid username or password"})
+            return
+        }
+
+        log.Println("logged to account with username",username)
+        w.WriteHeader(http.StatusOK)
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]string{"message": "Login success"})
     })
 
     http.HandleFunc("/create-account", func(w http.ResponseWriter, r *http.Request) {

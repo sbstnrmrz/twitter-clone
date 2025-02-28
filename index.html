@@ -48,6 +48,7 @@
       <input type="text" id="login-username" name="username" placeholder="Username" required> 
       <input type="password" id="login-password" name="password" placeholder="Password" required> 
       <button type="submit">Sign in</button>
+      <span id="login-error" style="color: red;"></span>
       <a id="create-account" href="#"><span>Create an account</span></a>
     </form>
 
@@ -58,15 +59,16 @@
       <button type="submit">Create account</button>
       <span id="create-account-error" style="color: red;"></span>
       <a id="login" href="#"><span>Already have an account? Sign in</span></a>
-
     </form>
   </div>
   <script>
+
     const loginForm = document.getElementById('login-form');
     const createAccountForm = document.getElementById('create-account-form');
     const showCreateAccountLink = document.getElementById('create-account');
     const showLoginLink = document.getElementById('login');
     const createAccountError = document.getElementById('create-account-error');
+    const loginError = document.getElementById('login-error');
 
     showCreateAccountLink.addEventListener('click', (e) => {
       e.preventDefault();
@@ -83,11 +85,15 @@
     });
 
     createAccountForm.addEventListener('submit', async (e) => {
-      e.preventDefault(); // Prevent default form submission
+      e.preventDefault();
 
       const name = document.getElementById('create-name').value;
       const username = document.getElementById('create-username').value;
       const password = document.getElementById('create-password').value;
+      console.log(`create account:`)
+      console.log(`  name: ${name}`)
+      console.log(`  username: ${username}`)
+      console.log(`  password: ${password}`)
 
       const formData = new FormData(createAccountForm); // Collect form data
 
@@ -111,6 +117,38 @@
       } catch (error) {
         console.error("Error:", error);
         createAccountError.textContent = "An error occurred. Please try again.";
+      }
+    });
+
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('create-username').value;
+      const password = document.getElementById('create-password').value;
+      console.log(`login:`)
+      console.log(`  username: ${username}`)
+      console.log(`  password: ${password}`)
+
+      const formData = new FormData(loginForm);
+
+      try {
+        const response = await fetch('/login', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          loginError.textContent = data.error;
+        } else {
+          alert("Login success");
+          loginForm.reset();
+          loginError.textContent = "";
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        loginError.textContent = "An error occurred. Please try again.";
       }
     });
 
