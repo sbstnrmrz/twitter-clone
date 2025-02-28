@@ -2,9 +2,10 @@ package main
 
 import (
 	"database/sql"
-//  "encoding/json"
+	"encoding/json"
 	"fmt"
 	"html/template"
+//	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -68,34 +69,56 @@ func main() {
     })
 
     http.HandleFunc("/create-account", func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Content-Type", "application/json")
-        r.ParseForm()
+        if r.Method != "POST" {
+            http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+            return
+        }
+
+//      for debug
+//      body, _ := io.ReadAll(r.Body)
+//      fmt.Println("Raw request body:", string(body))
+
+        err := r.ParseMultipartForm(10 << 20)
+        if err != nil {
+            fmt.Println(err);
+            w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+            http.Error(w, `{"error": "Invalid form data"}`, http.StatusBadRequest)
+            return
+        }
+
         name := r.FormValue("name")
         username := r.FormValue("username")
         password := r.FormValue("password")
 
         fmt.Println("New account:")
-        fmt.Println("  Name",name)
-        fmt.Println("  Username",username)
-        fmt.Println("  Password",password)
+        fmt.Println("  Name:", name)
+        fmt.Println("  Username:", username)
+        fmt.Println("  Password:", password)
 
         var existingUsername string
         err = db.QueryRow("SELECT username FROM accounts WHERE username = ?", username).Scan(&existingUsername)
         if err == nil {
-            log.Println("user:",existingUsername,"already exist")
-//          w.Header().Set("Content-Type", "application/json")
-//          json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Username: %s already exists", existingUsername)})
+            w.Header().Set("Content-Type", "application/json")
+            log.Println("Username:",existingUsername,"already exists")
+            json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Username: %s already exists", existingUsername)})
             return
-        } else if err != sql.ErrNoRows { //other error
-            http.Error(w, "Database error", http.StatusInternalServerError)
+        } else if err != sql.ErrNoRows {
+            http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
             return
         }
 
+        // Create new account
         res, err = db.Exec(dbCreateAccount, name, username, password)
         if err != nil {
-            log.Fatal(err)
+            http.Error(w, `{"error": "Failed to create account"}`, http.StatusInternalServerError)
+            return
         }
-        fmt.Println(res.RowsAffected())
+
+        // Success response
+        w.WriteHeader(http.StatusOK)
+        fmt.Fprintf(w, `{"message": "Account created successfully"}`)
+        log.Println("new account with username:",username)
+        json.NewEncoder(w).Encode(map[string]string{"message": "Account created successfully"})
     })
 
     const port = 8080
