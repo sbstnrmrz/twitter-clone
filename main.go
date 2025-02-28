@@ -103,6 +103,7 @@ func main() {
             json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Username: %s already exists", existingUsername)})
             return
         } else if err != sql.ErrNoRows {
+            fmt.Println("db error: no rows")
             http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
             return
         }
@@ -115,9 +116,9 @@ func main() {
         }
 
         // Success response
-        w.WriteHeader(http.StatusOK)
-        fmt.Fprintf(w, `{"message": "Account created successfully"}`)
         log.Println("new account with username:",username)
+        w.WriteHeader(http.StatusOK)
+        w.Header().Set("Content-Type", "application/json")
         json.NewEncoder(w).Encode(map[string]string{"message": "Account created successfully"})
     })
 
