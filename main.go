@@ -16,6 +16,7 @@ import (
 type PageData struct {
     ErrorMessage string
     User UserData
+    Posts []Post
 }
 
 type UserData struct {
@@ -24,6 +25,14 @@ type UserData struct {
     Username string
     Followers int
     Following int
+}
+
+type Post struct {
+    Name      string
+    Username  string
+    Content   string
+    Timestamp string
+    Likes     int
 }
 
 func main() {
@@ -73,7 +82,8 @@ func main() {
         //      body, _ := io.ReadAll(r.Body)
         //      fmt.Println("Raw request body:", string(body))
 
-        err := r.ParseMultipartForm(10 << 20)
+//      err := r.ParseMultipartForm(10 << 20)
+        err := r.ParseForm()
         if err != nil {
             fmt.Println(err);
             w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
@@ -117,10 +127,9 @@ func main() {
         log.Println("logged to account with username",username)
         redirectURL := fmt.Sprintf("/profile?username=%s", username)
         log.Println("Attempting redirect to:", redirectURL)
-        log.Println("Response headers before redirect:", w.Header())
 //      w.Header().Set("Location", redirectURL) // Explicitly set Location header for debugging
         http.Redirect(w, r, redirectURL, http.StatusSeeOther) // Use 303 instead of 302
-        fmt.Println(w.Header())
+        fmt.Println("header:",w.Header())
 //      w.WriteHeader(http.StatusOK)
 //      http.Redirect(w, r, redirectURL, http.StatusSeeOther)
     })
@@ -152,6 +161,9 @@ func main() {
         fmt.Println("  followers:",user.Followers)
         fmt.Println("  following:",user.Following)
 
+
+
+
         if err == sql.ErrNoRows {
             // User not found, return JSON error
             fmt.Println("no rows -> username:",username,"profile not found")
@@ -166,18 +178,48 @@ func main() {
             return
         }
 
-        // Execute the profile template with user data
-        profileTmpl, err := template.ParseFiles("profile.html")
+    // Query posts for the user
+    var posts []Post
+    rows, err := db.Query(`
+        SELECT u.name, u.username, p.content, p.timestamp, p.likes 
+        FROM users u JOIN posts p ON u.id = p.user_id 
+        WHERE u.username = ?`, username)
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]string{"error": "Database error fetching posts"})
+        log.Println("Database error fetching posts for user", username, err)
+        return
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var post Post
+        err = rows.Scan(&post.Name, &post.Username, &post.Content, &post.Timestamp, &post.Likes)
         if err != nil {
-            w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(map[string]string{"error": "Template error"})
-            log.Println("Template error for user", username, err)
-            return
+            log.Println("Error scanning post row:", err)
+            continue
         }
-        err = profileTmpl.Execute(w, user)
-        if err != nil {
-            log.Println(err)
-        }
+        posts = append(posts, post)
+    }
+
+    // Execute the profile template with user and posts data
+    data := PageData{
+        User:  user,
+        Posts: posts,
+    }
+
+    // Execute the profile template with user data
+    profileTmpl, err := template.ParseFiles("profile.html")
+    if err != nil {
+        w.Header().Set("Content-Type", "application/json")
+        json.NewEncoder(w).Encode(map[string]string{"error": "Template error"})
+        log.Println("Template error for user", username, err)
+        return
+    }
+    err = profileTmpl.Execute(w, data)
+    if err != nil {
+        log.Println(err)
+    }
 
 //      username := r.URL.Query().Get("username")
 //      if username == "" {

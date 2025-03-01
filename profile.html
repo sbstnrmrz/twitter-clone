@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Name}}(@{{.Username}}) - Twitter</title>
+    <title>{{.User.Name}}(@{{.User.Username}}) - Twitter</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -67,8 +67,60 @@
         .post {
             background-color: #1a1a1a;
             padding: 15px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             border-radius: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .post .profile-pic {
+            width: 48px;
+            height: 48px;
+            position: static;
+            margin: 0;
+            border: 2px solid #000;
+        }
+        .post-content {
+            flex: 1;
+        }
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+        .post-header .username {
+            font-weight: bold;
+            color: #fff;
+        }
+        .post-header .handle {
+            color: #71767b;
+            font-size: 14px;
+        }
+        .post-text {
+            margin: 5px 0;
+            color: #fff;
+            font-size: 15px;
+        }
+        .post-meta {
+            color: #71767b;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .post-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 15px;
+            color: #71767b;
+        }
+        .post-actions .action {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+        .post-actions .likes {
+            color: #f91880; /* Twitter/X like color */
         }
         a {
             color: #fff;
@@ -150,20 +202,28 @@
                     <button id="edit-profile">Editar perfil</button>
                 </div>
                 <div class="profile-details">
-                    <h1>{{.Name}}</h1>
-                    <p>@{{.Username}} | Venezuela | Se unió en julio de 2020</p>
-                    <p>{{.Followers}} | {{.Following}}</p>
+                    <h1>{{.User.Name}}</h1>
+                    <p>@{{.User.Username}} | Venezuela | Se unió en julio de 2020</p>
+                    <p>{{.User.Followers}} Followers | {{.User.Following}} Following</p>
                 </div>
             </div>
             <div class="posts">
+                {{range .Posts}}
                 <div class="post">
-                    <p>Love Shitposting and posting whatever wants/Satire/memes/some personal stuff. Affiliate of @METAFANS</p>
-                    <small>17h - ShittpostGate</small>
+                    <div class="profile-pic" style="background-image: url('https://via.placeholder.com/48?text={{.Username}}')"></div>
+                    <div class="post-content">
+                        <div class="post-header">
+                            <span class="username">{{.Name}}</span>
+                            <span class="handle">@{{.Username}}</span>
+                        </div>
+                        <div class="post-text">{{.Content}}</div>
+                        <div class="post-meta">{{.Timestamp}}</div>
+                        <div class="post-actions">
+                            <span class="action likes">{{.Likes}} ♥</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="post">
-                    <p>Play Smart / Pay Less</p>
-                    <small>Instant Gaming - @InstantGamingES</small>
-                </div>
+                {{end}}
             </div>
         </div>
 
