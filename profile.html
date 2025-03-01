@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sebastian Ramirez - X Profile</title>
+    <title>{{.Name}}(@{{.Username}}) - Twitter</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -150,9 +150,9 @@
                     <button id="edit-profile">Editar perfil</button>
                 </div>
                 <div class="profile-details">
-                    <h1>Sebastian Ramirez</h1>
-                    <p>@ssbsnmrz | Venezuela | Se unió en julio de 2020</p>
-                    <p>247 Siguiendo | 5 Seguidores</p>
+                    <h1>{{.Name}}</h1>
+                    <p>@{{.Username}} | Venezuela | Se unió en julio de 2020</p>
+                    <p>{{.Followers}} | {{.Following}}</p>
                 </div>
             </div>
             <div class="posts">

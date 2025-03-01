@@ -123,8 +123,8 @@
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const username = document.getElementById('create-username').value;
-      const password = document.getElementById('create-password').value;
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
       console.log(`login:`)
       console.log(`  username: ${username}`)
       console.log(`  password: ${password}`)
@@ -135,16 +135,27 @@
         const response = await fetch('/login', {
           method: 'POST',
           body: formData,
+//        redirect: 'follow',
         });
 
-        const data = await response.json();
+//      console.log("Login response:", {
+//        status: response.status,
+//        url: response.url,
+//        headers: response.headers,
+//      });
 
-        if (data.error) {
-          loginError.textContent = data.error;
-        } else {
-          alert("Login success");
+
+        if (response.ok) {
+          console.log("response ok");
           loginForm.reset();
           loginError.textContent = "";
+        } else {
+            const data = await response.json();
+            if (data.error) {
+                loginError.textContent = data.error;
+            } else {
+                loginError.textContent = "Login failed. Please try again.";
+            }
         }
       } catch (error) {
         console.error("Error:", error);
