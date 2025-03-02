@@ -37,6 +37,11 @@ type UserData struct {
     Following int
 }
 
+type PostPageData struct {
+    Username string
+    ErrorMessage string
+}
+
 type Post struct {
     ID        int    // Post ID to identify posts for liking
     Name      string
@@ -44,6 +49,7 @@ type Post struct {
     Content   string
     Timestamp string
     Likes     int
+    UserLiked bool
 }
 
 func main() {
@@ -106,7 +112,8 @@ func main() {
 
     dbCreateAccount := `INSERT INTO users (name, username, password) VALUES (?, ?, ?)`
     dbCreatePost := `INSERT INTO posts (user_id, content, timestamp, likes) VALUES (?, ?, ?, ?)`
-    dbIncrementLikes := `UPDATE posts SET likes = likes + 1 WHERE id = ?`
+    dbIncrementPostLikes := `UPDATE posts SET likes = likes + 1 WHERE id = ?`
+    dbDecrementPostLikes := `UPDATE posts SET likes = likes - 1 WHERE id = ?`
 
     _, err = db.Exec(dbAccountTable)
     if err != nil {
@@ -241,6 +248,15 @@ func main() {
                 log.Println("Error scanning post row:", err)
                 continue
             }
+
+
+            var userLiked bool
+            err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?)", user.ID, post.ID).Scan(&userLiked)
+            if err != nil {
+                log.Println("Error checking like status:", err)
+            }
+            post.UserLiked = userLiked;
+
             posts = append(posts, post)
         }
 
@@ -315,8 +331,7 @@ func main() {
         if r.Method == "GET" {
             username := r.URL.Query().Get("username")
             if username == "" {
-                w.Header().Set("Content-Type", "application/json")
-                json.NewEncoder(w).Encode(map[string]string{"error": "Username not found"})
+                fmt.Println("username not found")
                 return
             }
 
@@ -332,18 +347,13 @@ func main() {
             )
 
             if err == sql.ErrNoRows {
-                w.Header().Set("Content-Type", "application/json")
-                json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("User '%s' not found", username)})
                 return
             } else if err != nil {
-                w.Header().Set("Content-Type", "application/json")
-                json.NewEncoder(w).Encode(map[string]string{"error": "Database error"})
                 log.Println("Database error fetching user for post", username, err)
                 return
             }
 
-            // Serve the post form with the username
-            err = postPageTmpl.Execute(w, struct{ Username string }{Username: username})
+            err = postPageTmpl.Execute(w, PostPageData{Username: username})
             if err != nil {
                 log.Println(err)
             }
@@ -359,7 +369,6 @@ func main() {
         if err != nil {
             fmt.Println("ParseForm error:", err)
             w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(map[string]string{"error": "Invalid form data"})
             return
         }
 
@@ -375,22 +384,16 @@ func main() {
             SELECT id 
             FROM users WHERE username = ?`, username).Scan(&user.ID)
         if err == sql.ErrNoRows {
-            w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("User '%s' not found", username)})
             return
         } else if err != nil {
-            w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(map[string]string{"error": "Database error"})
             log.Println("Database error fetching user for post", username, err)
             return
         }
 
         // Insert the post into the database
-        timestamp := time.Now().Format("2006-01-02 15:04:05")
+        timestamp := time.Now().Format("3:04:05 PM - Jan 2, 2006")
         _, err = db.Exec(dbCreatePost, user.ID, content, timestamp, 0)
         if err != nil {
-            w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(map[string]string{"error": "Failed to create post"})
             log.Println("Failed to create post for user", username, err)
             return
         }
@@ -431,9 +434,6 @@ func main() {
             return
         }
 
-
-
-
         // Verify the user exists (optional, for security)
         var user UserData
         err = db.QueryRow(`
@@ -450,47 +450,31 @@ func main() {
             return
         }
 
-        //      // Increment the likes count for the post
-        //      result, err := db.Exec(dbIncrementLikes, postID)
-        //      if err != nil {
-        //          w.Header().Set("Content-Type", "application/json")
-        //          json.NewEncoder(w).Encode(map[string]string{"error": "Failed to update likes"})
-        //          log.Println("Failed to increment likes for post", postID, err)
-        //          return
-        //      }
 
-        //      rowsAffected, err := result.RowsAffected()
-        //      if err != nil || rowsAffected == 0 {
-        //          w.Header().Set("Content-Type", "application/json")
-        //          json.NewEncoder(w).Encode(map[string]string{"error": "Post not found or already liked"})
-        //          return
-        //      }
-
-        // Attempt to insert a like record (prevent duplicates)
-        result, err := db.Exec(`INSERT OR IGNORE INTO likes (user_id, post_id) VALUES (?, ?)`, user.ID, postID)
+        var likeExists bool
+        err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?)", user.ID, postID).Scan(&likeExists)
         if err != nil {
-            log.Println("Failed to insert like for post", postID, "user", user.ID, err)
+            fmt.Println(err)
             return
         }
 
-        rowsAffected, err := result.RowsAffected()
-        if err != nil {
-            log.Println("error aksdlasd")
-            return
-        }
-
-        if rowsAffected > 0 {
-            // Increment the likes count for the post
-            _, err = db.Exec(dbIncrementLikes, postID)
+        if likeExists {
+            // Unlike the post
+            _, err = db.Exec("DELETE FROM likes WHERE user_id = ? AND post_id = ?", user.ID, postID)
             if err != nil {
-                log.Println("Failed to increment likes count for post", postID, err)
+                fmt.Println(err)
                 return
             }
-            log.Println("Post", postID, "liked by user", username)
+            _, err = db.Exec(dbDecrementPostLikes, postID)
         } else {
-            log.Println("Post", postID, "already liked by user", username)
+            // Like the post
+            _, err = db.Exec("INSERT INTO likes (user_id, post_id) VALUES (?, ?)", user.ID, postID)
+            if err != nil {
+                fmt.Println(err)
+                return
+            }
+            _, err = db.Exec(dbIncrementPostLikes, postID)
         }
-
 
         log.Println("Post", postID, "liked by user", username)
         // Redirect back to the profile page after liking

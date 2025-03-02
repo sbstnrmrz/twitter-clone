@@ -139,7 +139,7 @@
             align-items: center;
         }
         .post-actions button:hover {
-            color: #1d9bf0;
+            color: #f91880;
         }
         .post-actions button::before {
             content: "♥"; /* Heart symbol for likes */
@@ -251,7 +251,7 @@
                             <form action="/like" method="post">
                                 <input type="hidden" name="post_id" value="{{.ID}}">
                                 <input type="hidden" name="username" value="{{.Username}}">
-                                <button type="submit">{{.Likes}}</button>
+                                <button type="submit" {{if .UserLiked}}style="color: #f91880;"{{end}}>{{.Likes}}</button>
                             </form>
                         </div>
                     </div>
