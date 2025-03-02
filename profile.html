@@ -107,6 +107,7 @@
             font-size: 14px;
             margin-top: 5px;
         }
+
         .post-actions {
             margin-top: 10px;
             display: flex;
@@ -122,6 +123,29 @@
         .post-actions .likes {
             color: #f91880; /* Twitter/X like color */
         }
+        .post-actions form {
+            margin: 0;
+            padding: 0;
+            display: inline;
+        }
+        .post-actions button {
+            background: none;
+            border: none;
+            color: #71767b;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+        .post-actions button:hover {
+            color: #1d9bf0;
+        }
+        .post-actions button::before {
+            content: "♥"; /* Heart symbol for likes */
+            margin-right: 5px;
+        }
+
         a {
             color: #fff;
             text-decoration: none;
@@ -224,7 +248,11 @@
                         <div class="post-text">{{.Content}}</div>
                         <div class="post-meta">{{.Timestamp}}</div>
                         <div class="post-actions">
-                            <span class="action likes">{{.Likes}} ♥</span>
+                            <form action="/like" method="post">
+                                <input type="hidden" name="post_id" value="{{.ID}}">
+                                <input type="hidden" name="username" value="{{.Username}}">
+                                <button type="submit">{{.Likes}}</button>
+                            </form>
                         </div>
                     </div>
                 </div>
