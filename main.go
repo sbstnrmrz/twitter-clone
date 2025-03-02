@@ -13,6 +13,15 @@ import (
     _ "github.com/mattn/go-sqlite3"
 )
 
+type LoginPageData struct {
+    ErrorMessage string
+    CreateAccountMessage string
+}
+
+type CreateAccountPageData struct {
+    ErrorMessage string
+}
+
 type PageData struct {
     ErrorMessage string
     User UserData
@@ -38,7 +47,12 @@ type Post struct {
 func main() {
     fmt.Println("twitter clone :)")
 
-    tmpl, err := template.ParseFiles("login.html")
+    loginPageTmpl, err := template.ParseFiles("login.html")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    createAccountPageTmpl, err := template.ParseFiles("create_account.html")
     if err != nil {
         log.Fatal(err)
     }
@@ -59,7 +73,7 @@ func main() {
         following INTEGER DEFAULT 0
     );`
 
-    dbCreateAccount := `INSERT INTO accounts (name, username, password) VALUES (?, ?, ?)`
+    dbCreateAccount := `INSERT INTO users (name, username, password) VALUES (?, ?, ?)`
 
     res, err := db.Exec(dbAccountTable)
     if err != nil {
@@ -69,24 +83,21 @@ func main() {
     fmt.Println(res.RowsAffected())
 
     http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-        tmpl.Execute(w, nil)
+        http.Redirect(w, r, "/login", http.StatusSeeOther)
     })
 
     http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != "POST" {
-            http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+        if r.Method == "GET" {
+            err := loginPageTmpl.Execute(w, LoginPageData{})
+            if err != nil {
+                log.Println(err)
+            }
             return
         }
 
-        //      for debug
-        //      body, _ := io.ReadAll(r.Body)
-        //      fmt.Println("Raw request body:", string(body))
-
-//      err := r.ParseMultipartForm(10 << 20)
         err := r.ParseForm()
         if err != nil {
             fmt.Println(err);
-            w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
             http.Error(w, `{"error": "Invalid form data"}`, http.StatusBadRequest)
             return
         }
@@ -103,35 +114,28 @@ func main() {
 
         if err == sql.ErrNoRows {
             fmt.Println("invalid username or password")
-            w.Header().Set("Content-Type", "application/json")
-            w.WriteHeader(http.StatusUnauthorized) // Set 401 Unauthorized
-            json.NewEncoder(w).Encode(map[string]string{"error": "Invalid username or password"})
+            w.WriteHeader(http.StatusUnauthorized)
+            loginPageTmpl.Execute(w, LoginPageData{ErrorMessage: "Invalid username or password"})
             return
         } else if err != nil {
             fmt.Println("database error")
-            w.Header().Set("Content-Type", "application/json")
-            w.WriteHeader(http.StatusInternalServerError) // Set 500 Internal Server Error
-            json.NewEncoder(w).Encode(map[string]string{"error": "Database error"})
+            w.WriteHeader(http.StatusInternalServerError)
+            loginPageTmpl.Execute(w, LoginPageData{ErrorMessage: "Database error"})
             return
         }
 
         err = bcrypt.CompareHashAndPassword([]byte(storedHashedPassword), []byte(password))
         if err != nil {
             fmt.Println("invalid username or password")
-            w.Header().Set("Content-Type", "application/json")
-            w.WriteHeader(http.StatusUnauthorized) // Set 401 Unauthorized
-            json.NewEncoder(w).Encode(map[string]string{"error": "Invalid username or password"})
+            w.WriteHeader(http.StatusUnauthorized)
+            loginPageTmpl.Execute(w, LoginPageData{ErrorMessage: "Invalid username or password"})
             return
         }
 
         log.Println("logged to account with username",username)
         redirectURL := fmt.Sprintf("/profile?username=%s", username)
         log.Println("Attempting redirect to:", redirectURL)
-//      w.Header().Set("Location", redirectURL) // Explicitly set Location header for debugging
-        http.Redirect(w, r, redirectURL, http.StatusSeeOther) // Use 303 instead of 302
-        fmt.Println("header:",w.Header())
-//      w.WriteHeader(http.StatusOK)
-//      http.Redirect(w, r, redirectURL, http.StatusSeeOther)
+        http.Redirect(w, r, redirectURL, http.StatusSeeOther)
     })
 
     http.HandleFunc("/profile", func(w http.ResponseWriter, r *http.Request) {
@@ -146,8 +150,8 @@ func main() {
 
         var user UserData
         err := db.QueryRow(`
-            SELECT id, name, username, followers, following 
-            FROM users WHERE username = ?`, username).Scan(
+        SELECT id, name, username, followers, following 
+        FROM users WHERE username = ?`, username).Scan(
             &user.Id,
             &user.Name,
             &user.Username,
@@ -161,103 +165,69 @@ func main() {
         fmt.Println("  followers:",user.Followers)
         fmt.Println("  following:",user.Following)
 
-
-
-
         if err == sql.ErrNoRows {
-            // User not found, return JSON error
             fmt.Println("no rows -> username:",username,"profile not found")
             w.Header().Set("Content-Type", "application/json")
             json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("User '%s' not found", username)})
+
             return
         } else if err != nil {
-            // Database or other error, return JSON error
             w.Header().Set("Content-Type", "application/json")
             json.NewEncoder(w).Encode(map[string]string{"error": "Database error"})
             log.Println("Database error fetching user", username, err)
             return
         }
 
-    // Query posts for the user
-    var posts []Post
-    rows, err := db.Query(`
+        // Query posts for the user
+        var posts []Post
+        rows, err := db.Query(`
         SELECT u.name, u.username, p.content, p.timestamp, p.likes 
         FROM users u JOIN posts p ON u.id = p.user_id 
         WHERE u.username = ?`, username)
-    if err != nil {
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(map[string]string{"error": "Database error fetching posts"})
-        log.Println("Database error fetching posts for user", username, err)
-        return
-    }
-    defer rows.Close()
-
-    for rows.Next() {
-        var post Post
-        err = rows.Scan(&post.Name, &post.Username, &post.Content, &post.Timestamp, &post.Likes)
         if err != nil {
-            log.Println("Error scanning post row:", err)
-            continue
+            w.Header().Set("Content-Type", "application/json")
+            json.NewEncoder(w).Encode(map[string]string{"error": "Database error fetching posts"})
+            log.Println("Database error fetching posts for user", username, err)
+            return
         }
-        posts = append(posts, post)
-    }
+        defer rows.Close()
 
-    // Execute the profile template with user and posts data
-    data := PageData{
-        User:  user,
-        Posts: posts,
-    }
+        for rows.Next() {
+            var post Post
+            err = rows.Scan(&post.Name, &post.Username, &post.Content, &post.Timestamp, &post.Likes)
+            if err != nil {
+                log.Println("Error scanning post row:", err)
+                continue
+            }
+            posts = append(posts, post)
+        }
 
-    // Execute the profile template with user data
-    profileTmpl, err := template.ParseFiles("profile.html")
-    if err != nil {
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(map[string]string{"error": "Template error"})
-        log.Println("Template error for user", username, err)
-        return
-    }
-    err = profileTmpl.Execute(w, data)
-    if err != nil {
-        log.Println(err)
-    }
+        // Execute the profile template with user and posts data
+        data := PageData{
+            User:  user,
+            Posts: posts,
+        }
 
-//      username := r.URL.Query().Get("username")
-//      if username == "" {
-//          http.Error(w, "Username not found", http.StatusBadRequest)
-//          return
-//      }
-
-//      var user UserData
-//      err := db.QueryRow(`
-//      SELECT id, name, username, followers, following 
-//      FROM accounts WHERE username = ?`, username).Scan(
-//          &user.id,
-//          &user.name,
-//          &user.username,
-//          &user.followers,
-//          &user.following,
-//      )
-
-//      if err == sql.ErrNoRows {
-//          http.Error(w, "User not found", http.StatusNotFound)
-//          return
-//      } else if err != nil {
-//          http.Error(w, "Database error", http.StatusInternalServerError)
-//          return
-//      }
-
-//      // Execute the profile template with user data
-//      profileTmpl, err := template.ParseFiles("profile.html")
-//      if err != nil {
-//          http.Error(w, "Template error", http.StatusInternalServerError)
-//          return
-//      }
-//      profileTmpl.Execute(w, user)
+        // Execute the profile template with user data
+        profileTmpl, err := template.ParseFiles("profile.html")
+        if err != nil {
+            w.Header().Set("Content-Type", "application/json")
+            json.NewEncoder(w).Encode(map[string]string{"error": "Template error"})
+            log.Println("Template error for user", username, err)
+            return
+        }
+        err = profileTmpl.Execute(w, data)
+        if err != nil {
+            log.Println(err)
+        }
     })
 
     http.HandleFunc("/create-account", func(w http.ResponseWriter, r *http.Request) {
-        if r.Method != "POST" {
-            http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+        if r.Method == "GET" {
+            err := createAccountPageTmpl.Execute(w, CreateAccountPageData{})
+            if err != nil {
+                fmt.Println(err)
+            }
             return
         }
 
@@ -265,10 +235,9 @@ func main() {
         //      body, _ := io.ReadAll(r.Body)
         //      fmt.Println("Raw request body:", string(body))
 
-        err := r.ParseMultipartForm(10 << 20)
+        err := r.ParseForm()
         if err != nil {
             fmt.Println(err);
-            w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
             http.Error(w, `{"error": "Invalid form data"}`, http.StatusBadRequest)
             return
         }
@@ -292,28 +261,28 @@ func main() {
         var existingUsername string
         err = db.QueryRow("SELECT username FROM users WHERE username = ?", username).Scan(&existingUsername)
         if err == nil {
-            w.Header().Set("Content-Type", "application/json")
             log.Println("Username:",existingUsername,"already exists")
-            json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Username: %s already exists", existingUsername)})
+            createAccountPageTmpl.Execute(w, CreateAccountPageData{fmt.Sprintf("Username: %s already exists", existingUsername)})
             return
         } else if err != sql.ErrNoRows {
             fmt.Println("db error: no rows")
             http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
+            createAccountPageTmpl.Execute(w, CreateAccountPageData{"Database error"})
             return
         }
 
-        // Create new account
         res, err = db.Exec(dbCreateAccount, name, username, hashedPassword)
         if err != nil {
+            fmt.Println("failed to create account")
             http.Error(w, `{"error": "Failed to create account"}`, http.StatusInternalServerError)
+            createAccountPageTmpl.Execute(w, CreateAccountPageData{"Failed to create account"})
             return
         }
 
         // Success response
         log.Println("new user:",username,"created")
-        w.WriteHeader(http.StatusOK)
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(map[string]string{"message": "Account created successfully"})
+        // maybe redirect
+        loginPageTmpl.Execute(w, LoginPageData{CreateAccountMessage: fmt.Sprintf("Username: %s created successfully", username)})
     })
 
     const port = 8080

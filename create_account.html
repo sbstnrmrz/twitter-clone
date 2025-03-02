@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Twitter clone</title>
+<title>Create account - Twitter</title>
 <style>
   html, body {
     height: 100%; 
@@ -40,29 +40,23 @@
     display: none; 
   }
 
-  .login-error {
+  .create-account-error {
     color: red;
     margin-top: 10px;
     display: {{if .ErrorMessage}}block{{else}}none{{end}};
   }
-  .create-account-success {
-    color: blue;
-    margin-top: 10px;
-    display: {{if .CreateAccountMessage}}block{{else}}none{{end}};
-  }
-
 
 </style>
 </head>
 <body>
   <div class="form-container">
-    <form action="/login" id="login-form" method="post">
-      <input type="text" id="login-username" name="username" placeholder="Username" required> 
-      <input type="password" id="login-password" name="password" placeholder="Password" required> 
-      <div class="login-error">{{.ErrorMessage}}</div>
-      <div class="create-account-success">{{.CreateAccountMessage}}</div>
-      <button type="submit">Sign in</button>
-      <a id="create-account" href="/create-account"><span>Create an account</span></a>
+    <form action="/create-account" method="post" id="create-account-form">
+      <input type="text" id="create-name" name="name" placeholder="Name" required> 
+      <input type="text" id="create-username" name="username" placeholder="Choose your username" required> 
+      <input type="password" id="create-password" name="password" placeholder="Create a password" required> 
+      <div class="create-account-error">{{.ErrorMessage}}</div>
+      <button type="submit">Create account</button>
+      <a id="login" href="/login"><span>Already have an account? Sign in</span></a>
     </form>
   </div>
 </body>
