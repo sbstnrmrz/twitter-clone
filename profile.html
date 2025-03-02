@@ -141,7 +141,11 @@
         }
         .nav-icon {
             margin-right: 10px;
-            font-size: 20px;
+            width: 20px;
+            height: 20px;
+        }
+        .nav-item:hover {
+            fill: #1d9bf0; /* Change fill color on hover to match Twitter blue */
         }
         .notification-badge {
             background-color: #1d9bf0;
@@ -151,47 +155,48 @@
             font-size: 12px;
             margin-left: 5px;
         }
+        /* Styling for the Post button (rounded rectangle under sidebar) */
+        .post-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #1d9bf0;
+            color: #fff;
+            border: none;
+            border-radius: 20px; /* Rounded rectangle */
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            text-align: center;
+            text-decoration: none;
+        }
+        .post-button:hover {
+            background-color: #1a91ea;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="sidebar">
             <a href="#" class="nav-item">
-                <span class="nav-icon">🏠</span> Inicio
+              <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+              </svg>
+                Inicio
             </a>
             <a href="#" class="nav-item">
-                <span class="nav-icon">🔍</span> Explorar
-            </a>
+                <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                </svg>
+                Mensajes
             <a href="#" class="nav-item">
-                <span class="nav-icon">🔔</span> Notificaciones
-                <span class="notification-badge">18</span>
+                <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+                Perfil
             </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">✉️</span> Mensajes
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">🤖</span> Grok
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">📌</span> Guardados
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">👥</span> Comunidades
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">⭐</span> Premium
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">⚡</span> Organizaciones v...
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">👤</span> Perfil
-            </a>
-            <a href="#" class="nav-item">
-                <span class="nav-icon">⋯</span> Más opciones
-            </a>
-            <!-- If you want a "Postear" button like in X, it could be a floating action button elsewhere, but I removed it from the sidebar as per your image:
-            <button style="position: fixed; bottom: 20px; right: 20px;">Postear</button> -->
+            <!-- Post button under sidebar as a rounded rectangle -->
+            <a href="/post?username={{.User.Username}}" class="post-button">Post</a>
         </div>
 
         <div class="main-content">
