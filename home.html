@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.User.Name}}(@{{.User.Username}}) - Twitter</title>
+    <title>Home - Twitter</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -224,18 +224,6 @@
         </div>
 
         <div class="main-content">
-            <div class="profile-header">
-                <div class="profile-banner"></div>
-                <div class="profile-pic"></div>
-                <div class="edit-profile-sep">
-                    <button id="edit-profile">Editar perfil</button>
-                </div>
-                <div class="profile-details">
-                    <h1>{{.User.Name}}</h1>
-                    <p>@{{.User.Username}} | Venezuela | Se unió en julio de 2020</p>
-                    <p>{{.User.Followers}} Followers | {{.User.Following}} Following</p>
-                </div>
-            </div>
             <div class="posts">
                 {{range .Posts}}
                 <div class="post">
@@ -285,3 +273,4 @@
     </div>
 </body>
 </html>
+
