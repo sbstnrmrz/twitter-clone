@@ -281,9 +281,13 @@ func main() {
             return
         }
 
+        //      for debug
+        //      body, _ := io.ReadAll(r.Body)
+        //      fmt.Println("Raw request body:", string(body))
+
         err := r.ParseForm()
         if err != nil {
-            fmt.Println(err)
+            fmt.Println(err);
             http.Error(w, `{"error": "Invalid form data"}`, http.StatusBadRequest)
             return
         }
@@ -299,34 +303,37 @@ func main() {
 
         hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
         if err != nil {
-            createAccountPageTmpl.Execute(w, CreateAccountPageData{ErrorMessage: "Error hashing password"})
-            fmt.Println("Error hashing password")
+            http.Error(w, "Error hashing password", http.StatusInternalServerError)
+            fmt.Println("error hasing password")
             return
         }
 
         var existingUsername string
         err = db.QueryRow("SELECT username FROM users WHERE username = ?", username).Scan(&existingUsername)
         if err == nil {
-            createAccountPageTmpl.Execute(w, CreateAccountPageData{ErrorMessage: fmt.Sprintf("Username: %s already exists", existingUsername)})
+            log.Println("Username:",existingUsername,"already exists")
+            createAccountPageTmpl.Execute(w, CreateAccountPageData{fmt.Sprintf("Username: %s already exists", existingUsername)})
             return
         } else if err != sql.ErrNoRows {
-            fmt.Println("Database error: no rows")
-            createAccountPageTmpl.Execute(w, CreateAccountPageData{ErrorMessage: "Database error"})
+            fmt.Println("db error: no rows")
+            http.Error(w, `{"error": "Database error"}`, http.StatusInternalServerError)
+            createAccountPageTmpl.Execute(w, CreateAccountPageData{"Database error"})
             return
         }
 
         _, err = db.Exec(dbCreateAccount, name, username, hashedPassword)
         if err != nil {
-            createAccountPageTmpl.Execute(w, CreateAccountPageData{ErrorMessage: "Failed to create account"})
-            fmt.Println("Failed to create account")
+            fmt.Println("failed to create account")
+            http.Error(w, `{"error": "Failed to create account"}`, http.StatusInternalServerError)
+            createAccountPageTmpl.Execute(w, CreateAccountPageData{"Failed to create account"})
             return
         }
 
-        log.Println("New user:", username, "created")
-        // Redirect to the login page after successful account creation
-        http.Redirect(w, r, "/login", http.StatusSeeOther)
+        // Success response
+        log.Println("new user:",username,"created")
+        // maybe redirect
+        loginPageTmpl.Execute(w, LoginPageData{CreateAccountMessage: fmt.Sprintf("Username: %s created successfully", username)})
     })
-
     http.HandleFunc("/post", func(w http.ResponseWriter, r *http.Request) {
         if r.Method == "GET" {
             username := r.URL.Query().Get("username")
