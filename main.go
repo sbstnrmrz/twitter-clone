@@ -29,6 +29,7 @@ type PageData struct {
     ErrorMessage string
     User         UserData
     Posts        []Post
+    LoggedInUser UserData
 }
 
 type UserData struct {
@@ -94,6 +95,42 @@ func getUserPosts(db *sql.DB, user UserData) []Post {
 
         var userLiked bool
         err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?)", user.ID, post.ID).Scan(&userLiked)
+        if err != nil {
+            log.Println("Error checking like status:", err)
+            continue
+        }
+        post.UserLiked = userLiked;
+
+        posts = append(posts, post)
+    }
+    
+    return posts
+}
+
+func getUserPostsWithLoggedUser(db *sql.DB, user UserData, loggedUser UserData) []Post {
+    var posts []Post
+    rows, err := db.Query(`
+    SELECT p.id, u.name, u.username, p.content, p.timestamp, p.likes 
+    FROM users u JOIN posts p ON u.id = p.user_id 
+    WHERE u.username = ? 
+    ORDER BY p.timestamp DESC`, user.Username)
+
+    if err != nil {
+        log.Println("Database error fetching posts for user", user.Username, err)
+        return posts
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var post Post
+        err = rows.Scan(&post.ID, &post.Name, &post.Username, &post.Content, &post.Timestamp, &post.Likes)
+        if err != nil {
+            log.Println("Error scanning post row:", err)
+            continue
+        }
+
+        var userLiked bool
+        err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?)", loggedUser.ID, post.ID).Scan(&userLiked)
         if err != nil {
             log.Println("Error checking like status:", err)
             continue
@@ -271,15 +308,20 @@ func main() {
     })
 
     http.HandleFunc("/profile", func(w http.ResponseWriter, r *http.Request) {
-        username, loggedIn := getLoggedInUser(r)
+        _, loggedIn := getLoggedInUser(r)
         if !loggedIn {
             http.Redirect(w, r, "/login", http.StatusSeeOther)
             return
         }
 
+        username := r.URL.Query().Get("username")
+        if username == "" {
+            http.Error(w, "Username not provided", http.StatusBadRequest)
+            return
+        }
+
         var user UserData
-        err := db.QueryRow(`
-        SELECT id, name, username, followers, following 
+        err := db.QueryRow(`SELECT id, name, username, followers, following
         FROM users WHERE username = ?`, username).Scan(
             &user.ID,
             &user.Name,
@@ -291,31 +333,35 @@ func main() {
         if err == sql.ErrNoRows {
             http.Error(w, "User not found", http.StatusNotFound)
             return
-        }
-
-
-        fmt.Println("User data requested:")
-        fmt.Println("  ID:", user.ID)
-        fmt.Println("  Username:", user.Username)
-        fmt.Println("  Followers:", user.Followers)
-        fmt.Println("  Following:", user.Following)
-
-        if err == sql.ErrNoRows {
-            fmt.Println("No rows -> Username:", username, "profile not found")
-            w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("User '%s' not found", username)})
-            return
         } else if err != nil {
-            w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(map[string]string{"error": "Database error"})
             log.Println("Database error fetching user", username, err)
+            http.Error(w, "Database error", http.StatusInternalServerError)
             return
         }
 
-        fmt.Println("fetched posts from user:",user.Username)
+        // Check if a user is logged in (optional, for like status)
+        loggedInUsername, loggedIn := getLoggedInUser(r)
+        var loggedInUser UserData
+        if loggedIn {
+            err = db.QueryRow(`
+            SELECT id, name, username, followers, following
+            FROM users WHERE username = ?`, loggedInUsername).Scan(
+                &loggedInUser.ID,
+                &loggedInUser.Name,
+                &loggedInUser.Username,
+                &loggedInUser.Followers,
+                &loggedInUser.Following,
+            )
+            if err != nil && err != sql.ErrNoRows {
+                log.Println("Database error fetching logged-in user", loggedInUsername, err)
+                // Handle logged in database error.
+            }
+        }
+
         data := PageData{
             User:  user,
-            Posts: getUserPosts(db, user),
+            Posts: getUserPostsWithLoggedUser(db, user, loggedInUser),
+            LoggedInUser: loggedInUser,
         }
 
         err = profilePageTmpl.Execute(w, data)
@@ -550,6 +596,7 @@ func main() {
 
         postIDStr := r.FormValue("post_id")
         username := r.FormValue("username")
+        loggedUser, _ := getLoggedInUser(r) 
 
         if postIDStr == "" || username == "" {
             w.Header().Set("Content-Type", "application/json")
@@ -564,22 +611,21 @@ func main() {
             return
         }
 
+        // this queries the logged user info and so
         // Verify the user exists (optional, for security)
         var user UserData
         err = db.QueryRow(`
         SELECT id 
-        FROM users WHERE username = ?`, username).Scan(&user.ID)
+        FROM users WHERE username = ?`, loggedUser).Scan(&user.ID)
         if err == sql.ErrNoRows {
-            w.Header().Set("Content-Type", "application/json")
-            json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("User '%s' not found", username)})
+            log.Println("user", loggedUser, "not found")
             return
         } else if err != nil {
             w.Header().Set("Content-Type", "application/json")
             json.NewEncoder(w).Encode(map[string]string{"error": "Database error"})
-            log.Println("Database error fetching user for like", username, err)
+            log.Println("Database error fetching user for like", loggedUser, err)
             return
         }
-
 
         var likeExists bool
         err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?)", user.ID, postID).Scan(&likeExists)
