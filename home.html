@@ -89,8 +89,19 @@
             gap: 5px;
             margin-bottom: 5px;
         }
+
         .post-header .username {
+            text-decoration: none;
+            display: unset;
+            padding: unset;
+            margin: unset;
             font-weight: bold;
+            color: #fff;
+        }
+
+        .post-header .username:hover {
+            font-weight: bold;
+            text-decoration: underline;
             color: #fff;
         }
         .post-header .handle {
@@ -101,6 +112,7 @@
             margin: 5px 0;
             color: #fff;
             font-size: 15px;
+            overflow: scroll;
         }
         .post-meta {
             color: #71767b;
@@ -172,65 +184,114 @@
             fill: #1d9bf0; /* Change fill color on hover to match Twitter blue */
         }
         .notification-badge {
-            background-color: #1d9bf0;
-            color: #000;
-            border-radius: 10px;
-            padding: 2px 6px;
-            font-size: 12px;
-            margin-left: 5px;
+          background-color: #1d9bf0;
+          color: #000;
+          border-radius: 10px;
+          padding: 2px 6px;
+          font-size: 12px;
+          margin-left: 5px;
         }
         /* Styling for the Post button (rounded rectangle under sidebar) */
         .post-button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background-color: #1d9bf0;
-            color: #fff;
-            border: none;
-            border-radius: 20px; /* Rounded rectangle */
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 10px;
-            text-align: center;
-            text-decoration: none;
+          display: block;
+          width: 100%;
+          padding: 10px;
+          background-color: #1d9bf0;
+          color: #fff;
+          border: none;
+          border-radius: 20px; /* Rounded rectangle */
+          font-size: 16px;
+          cursor: pointer;
+          margin-top: 10px;
+          text-align: center;
+          text-decoration: none;
         }
         .post-button:hover {
-            background-color: #1a91ea;
+          background-color: #1a91ea;
         }
+        .post-form {
+          background-color: #1a1a1a;
+          padding: 15px;
+          margin-bottom: 15px;
+          border-radius: 10px;
+        }
+
+        .post-form textarea {
+          width: 97%;
+          padding: 10px;
+          margin-bottom: 10px;
+          border: 1px solid #333;
+          border-radius: 5px;
+          background-color: #000;
+          color: #fff;
+          resize: vertical;
+        }
+
+        .post-form button {
+          background-color: #1d9bf0;
+          color: white;
+          padding: 10px 15px;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+        }
+
+        .post-form button:hover {
+          background-color: #1a91ea;
+        }
+    .post-form textarea {
+        resize: none;
+        overflow: scroll;
+    }
+
+
     </style>
 </head>
 <body>
     <div class="container">
         <div class="sidebar">
-            <a href="#" class="nav-item">
+            <a href="/home" class="nav-item">
               <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
               </svg>
-                Inicio
+               Home
             </a>
             <a href="#" class="nav-item">
                 <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                 </svg>
-                Mensajes
-            <a href="#" class="nav-item">
+                Messages
+            <a href="/profile" class="nav-item">
                 <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 </svg>
-                Perfil
+                Profile
+            </a>
+            <a href="/logout" class="nav-item">
+              <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15" />
+              </svg>
+              Log out
             </a>
             <!-- Post button under sidebar as a rounded rectangle -->
             <a href="/post?username={{.User.Username}}" class="post-button">Post</a>
         </div>
 
         <div class="main-content">
+            <div class="post-form">
+                <form action="/post" method="post">
+                    <input type="hidden" name="username" value="{{.User.Username}}">
+                    <textarea name="content" placeholder="What's happening?" required></textarea>
+                    <button type="submit">Post</button>
+                </form>
+            </div>
             <div class="posts">
                 {{range .Posts}}
                 <div class="post">
                     <div class="profile-pic" style="background-image: url('https://via.placeholder.com/48?text={{.Username}}')"></div>
                     <div class="post-content">
                         <div class="post-header">
-                            <span class="username">{{.Name}}</span>
+                            <a href="/profile" class="username">{{.Name}}</a>
                             <span class="handle">@{{.Username}}</span>
                         </div>
                         <div class="post-text">{{.Content}}</div>

@@ -109,7 +109,7 @@ func getUserPosts(db *sql.DB, user UserData) []Post {
 func getAllPosts(db *sql.DB) []Post {
     var posts []Post
     rows, err := db.Query(`
-        SELECT p.id, u.name, u.username, p.content, p.timestamp, p.likes 
+        SELECT p.id, u.id, u.name, u.username, p.content, p.timestamp, p.likes 
         FROM posts p
         JOIN users u ON p.user_id = u.id
         ORDER BY p.timestamp DESC
@@ -122,11 +122,21 @@ func getAllPosts(db *sql.DB) []Post {
 
     for rows.Next() {
         var post Post
-        err = rows.Scan(&post.ID, &post.Name, &post.Username, &post.Content, &post.Timestamp, &post.Likes)
+        var userID int
+        err = rows.Scan(&post.ID, &userID, &post.Name, &post.Username, &post.Content, &post.Timestamp, &post.Likes)
         if err != nil {
             fmt.Println(err)
             return posts
         }
+
+        var userLiked bool
+        err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?)", userID, post.ID).Scan(&userLiked)
+        if err != nil {
+            log.Println("Error checking like status:", err)
+            continue
+        }
+        post.UserLiked = userLiked;
+
         posts = append(posts, post)
     }
 
@@ -520,7 +530,7 @@ func main() {
 
         log.Println("New post created for username:", username)
         // Redirect back to the profile page after successful post
-        http.Redirect(w, r, fmt.Sprintf("/profile?username=%s", username), http.StatusSeeOther)
+        http.Redirect(w, r, "/home", http.StatusSeeOther)
     })
 
     // Endpoint to handle liking a post
