@@ -30,6 +30,8 @@ type PageData struct {
     User         UserData
     Posts        []Post
     LoggedInUser UserData
+    IsOwnProfile bool
+    IsFollowing bool
 }
 
 type UserData struct {
@@ -69,6 +71,16 @@ func getLoggedInUser(r *http.Request) (string, bool) {
     
     username, exists := sessions[cookie.Value]
     return username, exists
+}
+
+func getUserID(db *sql.DB, username string) int {
+    var id int
+    err := db.QueryRow(`SELECT id FROM users WHERE username = ?`, username).Scan(&id)
+    if err != nil {
+        fmt.Println(err)
+    }
+
+    return id
 }
 
 func getUserFromString(db *sql.DB, userStr string) UserData {
@@ -278,7 +290,7 @@ func main() {
     }
     defer db.Close()
 
-    dbAccountTable := `
+    dbUsersTable := `
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -307,12 +319,22 @@ func main() {
         FOREIGN KEY (post_id) REFERENCES posts(id)
     );`
 
+    dbFollowsTable := `
+    CREATE TABLE IF NOT EXISTS follows (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        follower_id INTEGER NOT NULL,  -- The user who follows
+        following_id INTEGER NOT NULL, -- The user being followed
+        FOREIGN KEY (follower_id) REFERENCES users(id),
+        FOREIGN KEY (following_id) REFERENCES users(id),
+        UNIQUE (follower_id, following_id) -- Prevent duplicate follows
+    );`
+
     dbCreateAccount := `INSERT INTO users (name, username, password) VALUES (?, ?, ?)`
     dbCreatePost := `INSERT INTO posts (user_id, content, timestamp, likes) VALUES (?, ?, ?, ?)`
     dbIncrementPostLikes := `UPDATE posts SET likes = likes + 1 WHERE id = ?`
     dbDecrementPostLikes := `UPDATE posts SET likes = likes - 1 WHERE id = ?`
 
-    _, err = db.Exec(dbAccountTable)
+    _, err = db.Exec(dbUsersTable)
     if err != nil {
         log.Fatal(err)
     }
@@ -323,6 +345,11 @@ func main() {
     }
 
     _, err = db.Exec(dbLikesTable)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    _, err = db.Exec(dbFollowsTable)
     if err != nil {
         log.Fatal(err)
     }
@@ -420,11 +447,24 @@ func main() {
             }
         }
 
+        var isFollowing bool
+        db.QueryRow("SELECT EXISTS(SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?)", loggedInUser.ID, user.ID).Scan(&isFollowing)
+        
+        isOwnProfile := false 
+        if username == loggedInUsername {
+            isOwnProfile = true
+        }
+
         data := PageData{
             User:  user,
             Posts: getUserPostsWithLoggedUser(db, user, loggedInUser),
             LoggedInUser: loggedInUser,
+            IsFollowing: isFollowing,
+            IsOwnProfile: isOwnProfile,
         }
+
+        fmt.Println("is own profile:", isOwnProfile)
+        fmt.Println("is following:", isFollowing)
 
         err = profilePageTmpl.Execute(w, data)
         if err != nil {
@@ -725,6 +765,46 @@ func main() {
         log.Println("like count:", likeCount)
 
         // Redirect back to the profile page after liking
+        http.Redirect(w, r, fmt.Sprintf("/profile?username=%s", username), http.StatusSeeOther)
+    })
+
+    http.HandleFunc("/follow", func(w http.ResponseWriter, r *http.Request) {
+        username := r.URL.Query().Get("username")
+        if username == "" {
+            fmt.Println("username not found")
+            return
+        }
+
+        loggedUserStr, _ := getLoggedInUser(r) // Get logged-in user ID
+        loggedUserID := strconv.Itoa(getUserID(db, loggedUserStr))
+        userID := r.PathValue("id")        // Get the user to follow/unfollow
+
+        if loggedUserID == userID {
+            http.Error(w, "You cannot follow yourself", http.StatusBadRequest)
+            return
+        }
+
+        var exists bool
+        err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?)", loggedUserID, userID).Scan(&exists)
+        if err != nil {
+            http.Error(w, "Database error", http.StatusInternalServerError)
+            return
+        }
+
+        if exists {
+            // Unfollow
+            _, err = db.Exec("DELETE FROM follows WHERE follower_id = ? AND following_id = ?", loggedUserID, userID)
+        } else {
+            // Follow
+            _, err = db.Exec("INSERT INTO follows (follower_id, following_id) VALUES (?, ?)", loggedUserID, userID)
+        }
+
+        if err != nil {
+            http.Error(w, "Database error", http.StatusInternalServerError)
+            return
+        }
+
+        // Redirect back to the profile page (refreshes the page)
         http.Redirect(w, r, fmt.Sprintf("/profile?username=%s", username), http.StatusSeeOther)
     })
 

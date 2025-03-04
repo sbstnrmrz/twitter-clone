@@ -238,6 +238,36 @@
             margin: unset;
         }
         */
+
+
+        .follow-btn {
+          padding: 8px 16px;
+          border: 1px solid #1da1f2;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: bold;
+          transition: background-color 0.2s, color 0.2s;
+          float: right;
+        }
+
+        .follow-btn.following {
+          background-color: white;
+          color: #1da1f2;
+        }
+
+        .follow-btn.not-following {
+          background-color: #1da1f2;
+          color: white;
+        }
+
+        .follow-btn:hover {
+          background-color: #0c85d0;
+          color: white;
+        }
+
+
+
     </style>
 </head>
 <body>
@@ -275,7 +305,16 @@
                 <div class="profile-banner"></div>
                 <div class="profile-pic"></div>
                 <div class="edit-profile-sep">
+                  {{if .IsOwnProfile}}
                     <button id="edit-profile">Editar perfil</button>
+                  {{else}}
+                    <form action="/follow?username={{.User.Username}}" method="post">
+                      <button type="submit" 
+                              class="follow-btn {{ if .IsFollowing }}following{{ else }}not-following{{ end }}">
+                        {{ if .IsFollowing }} Unfollow {{ else }} Follow {{ end }}
+                      </button>
+                    </form>
+                  {{end}}
                 </div>
                 <div class="profile-details">
                     <h1>{{.User.Name}}</h1>
