@@ -108,16 +108,28 @@
             color: #71767b;
             font-size: 14px;
         }
+
+        .post-container {
+          max-width: 600px;  /* Adjust based on your layout */
+          word-wrap: break-word;  /* Ensures long words don't overflow */
+          /*white-space: pre-line;  /* Preserves newlines */
+          /*padding: 5px;*/
+          /*border: 1px solid #ddd;*/
+          border-radius: 0px;
+          background-color: #1a1a1a;
+        }
+
         .post-text {
+            text-align: left; /* Ensures text is left-aligned */
             margin: 5px 0;
             color: #fff;
             font-size: 15px;
-            overflow: scroll;
+            overflow-wrap: break-word;
         }
         .post-meta {
             color: #71767b;
             font-size: 14px;
-            margin-top: 5px;
+            margin-top: 15px;
         }
 
         .post-actions {
@@ -225,6 +237,7 @@
           background-color: #000;
           color: #fff;
           resize: vertical;
+
         }
 
         .post-form button {
@@ -241,10 +254,8 @@
         }
     .post-form textarea {
         resize: none;
-        overflow: scroll;
+        overflow:auto;
     }
-
-
     </style>
 </head>
 <body>
@@ -294,7 +305,9 @@
                             <a href="/profile?username={{.Username}}" class="username">{{.Name}}</a>
                             <span class="handle">@{{.Username}}</span>
                         </div>
-                        <div class="post-text">{{.Content}}</div>
+                        <div class="post-container">
+                          <p class="post-text">{{.Content}}</p>
+                        </div>
                         <div class="post-meta">{{.Timestamp}}</div>
                         <div class="post-actions">
                             <form action="/like" method="post">
