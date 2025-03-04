@@ -333,6 +333,10 @@ func main() {
     dbCreatePost := `INSERT INTO posts (user_id, content, timestamp, likes) VALUES (?, ?, ?, ?)`
     dbIncrementPostLikes := `UPDATE posts SET likes = likes + 1 WHERE id = ?`
     dbDecrementPostLikes := `UPDATE posts SET likes = likes - 1 WHERE id = ?`
+    dbIncrementUserFollowers := `UPDATE users SET followers = followers + 1 WHERE username = ?`
+    dbDecrementUserFollowers := `UPDATE users SET followers = followers - 1 WHERE username = ?`
+    dbIncrementLoggedUserFollowing := `UPDATE users SET following = following + 1 WHERE username = ?`
+    dbDecrementLoggedUserFollowing := `UPDATE users SET following = following - 1 WHERE username = ?`
 
     _, err = db.Exec(dbUsersTable)
     if err != nil {
@@ -449,6 +453,7 @@ func main() {
 
         var isFollowing bool
         db.QueryRow("SELECT EXISTS(SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?)", loggedInUser.ID, user.ID).Scan(&isFollowing)
+        fmt.Println("loggedUser:",loggedInUser.ID,"| user:", user.ID)
         
         isOwnProfile := false 
         if username == loggedInUsername {
@@ -777,7 +782,8 @@ func main() {
 
         loggedUserStr, _ := getLoggedInUser(r) // Get logged-in user ID
         loggedUserID := strconv.Itoa(getUserID(db, loggedUserStr))
-        userID := r.PathValue("id")        // Get the user to follow/unfollow
+        user := getUserFromString(db, username)
+        userID := strconv.Itoa(user.ID)
 
         if loggedUserID == userID {
             http.Error(w, "You cannot follow yourself", http.StatusBadRequest)
@@ -794,9 +800,13 @@ func main() {
         if exists {
             // Unfollow
             _, err = db.Exec("DELETE FROM follows WHERE follower_id = ? AND following_id = ?", loggedUserID, userID)
+            _, err = db.Exec(dbDecrementUserFollowers, username)
+            _, err = db.Exec(dbDecrementLoggedUserFollowing, loggedUserStr)
         } else {
             // Follow
             _, err = db.Exec("INSERT INTO follows (follower_id, following_id) VALUES (?, ?)", loggedUserID, userID)
+            _, err = db.Exec(dbIncrementUserFollowers, username)
+            _, err = db.Exec(dbIncrementLoggedUserFollowing, loggedUserStr)
         }
 
         if err != nil {
