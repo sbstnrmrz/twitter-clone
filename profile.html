@@ -39,7 +39,7 @@
         .profile-banner {
             width: 100%;
             height: 150px;
-            background-image: url('https://via.placeholder.com/1200x150?text=Profile+Banner'); /* Replace with actual banner URL */
+            background-image: url('https://via.placeholder.com/1200x150?text=Profile+Banner');
             background-size: cover;
             background-position: center;
             border-radius: 10px 10px 0 0;
@@ -48,21 +48,21 @@
         .profile-pic {
             width: 100px;
             height: 100px;
-            background-image: url('https://via.placeholder.com/100?text=Profile+Pic'); /* Replace with actual profile pic URL */
+            background-image: url('https://via.placeholder.com/100?text=Profile+Pic');
             border-radius: 50%;
             border: 4px solid #000;
             position: absolute;
-            top: 120px; /* Position below banner */
+            top: 120px;
             left: 20px;
         }
 
         .profile-pic-right {
             width: 100px;
             height: 100px;
-            background-image: url('https://via.placeholder.com/100?text=Profile+Pic'); /* Replace with actual profile pic URL */
+            background-image: url('https://via.placeholder.com/100?text=Profile+Pic');
             border-radius: 50%;
             border: 4px solid #000;
-            top: 120px; /* Position below banner */
+            top: 120px;
             left: 20px;
         }
 
@@ -121,17 +121,14 @@
 
 
         .post-container {
-          max-width: 600px;  /* Adjust based on your layout */
-          word-wrap: break-word;  /* Ensures long words don't overflow */
-          /*white-space: pre-line;  /* Preserves newlines */
-          /*padding: 5px;*/
-          /*border: 1px solid #ddd;*/
+          max-width: 600px;
+          word-wrap: break-word;
           border-radius: 0px;
           background-color: #1a1a1a;
         }
 
         .post-text {
-            text-align: left; /* Ensures text is left-aligned */
+            text-align: left;
             margin: 5px 0;
             color: #fff;
             font-size: 15px;
@@ -156,7 +153,7 @@
             font-size: 14px;
         }
         .post-actions .likes {
-            color: #1d9bf0; /* Twitter/X like color */
+            color: #1d9bf0;
         }
         .post-actions form {
             margin: 0;
@@ -177,7 +174,7 @@
             color: #f91880;
         }
         .post-actions button::before {
-            content: "♥"; /* Heart symbol for likes */
+            content: "♥";
             margin-right: 5px;
         }
 
@@ -204,7 +201,7 @@
             height: 20px;
         }
         .nav-item:hover {
-            fill: #1d9bf0; /* Change fill color on hover to match Twitter blue */
+            fill: #1d9bf0;
         }
         .notification-badge {
             background-color: #1d9bf0;
@@ -214,7 +211,7 @@
             font-size: 12px;
             margin-left: 5px;
         }
-        /* Styling for the Post button (rounded rectangle under sidebar) */
+
         .post-button {
             display: block;
             width: 100%;
@@ -222,7 +219,7 @@
             background-color: #1d9bf0;
             color: #fff;
             border: none;
-            border-radius: 20px; /* Rounded rectangle */
+            border-radius: 20px;
             font-size: 16px;
             cursor: pointer;
             margin-top: 10px;
@@ -232,24 +229,6 @@
         .post-button:hover {
             background-color: #1a91ea;
         }
-/*
-        #profile-link {
-            color: #fff;
-            text-decoration: none;
-            display: unset;
-            padding: unset;
-            margin: unset;
-        }
-
-        #profile-link:hover {
-            color: #fff;
-            text-decoration: underline;
-            display: unset;
-            padding: unset;
-            margin: unset;
-        }
-        */
-
 
         .follow-btn {
           padding: 8px 16px;
@@ -278,18 +257,17 @@
         }
 
 
-        /* Adjust profile header for right sidebar */
         .right-sidebar .profile-header {
           margin-bottom: 15px;
           padding: 15px;
         }
         .right-sidebar .profile-banner {
-          height: 100px; /* Smaller banner for sidebar */
+          height: 100px;
         }
         .right-sidebar .profile-pic {
           width: 60px;
           height: 60px;
-          top: 70px; /* Adjust position for smaller banner */
+          top: 70px;
         }
         .right-sidebar .profile-details h1 {
           font-size: 16px;
@@ -299,8 +277,6 @@
           font-size: 12px;
           margin: 2px 0;
         }
-
-
 
     </style>
 </head>
@@ -330,7 +306,6 @@
               </svg>
               Log out
             </a>
-            <!-- Post button under sidebar as a rounded rectangle -->
             <a href="/post?username={{.LoggedInUser.Username}}" class="post-button">Post</a>
         </div>
 

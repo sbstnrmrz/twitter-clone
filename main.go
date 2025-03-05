@@ -288,13 +288,17 @@ func getAllPosts(db *sql.DB) []Post {
 
 func getAllPostsWithLoggedUser(db *sql.DB, loggedUser UserData) []Post {
     var posts []Post
+
     rows, err := db.Query(`
         SELECT p.id, u.id, u.name, u.username, p.content, p.timestamp, p.likes 
         FROM posts p
         JOIN users u ON p.user_id = u.id
+        LEFT JOIN follows f ON f.following_id = u.id
         WHERE p.parent_post_id IS NULL
+        AND (f.follower_id = ? OR p.user_id = ?)
         ORDER BY p.timestamp DESC
-    `)
+    `, loggedUser.ID, loggedUser.ID)
+
     if err != nil {
         fmt.Println(err)
         return posts
@@ -881,7 +885,6 @@ func main() {
         }
 
         if likeExists {
-            // Unlike the post
             _, err = db.Exec("DELETE FROM likes WHERE user_id = ? AND post_id = ?", user.ID, postID)
             if err != nil {
                 fmt.Println(err)
@@ -889,7 +892,6 @@ func main() {
             }
             _, err = db.Exec(dbDecrementPostLikes, postID)
         } else {
-            // Like the post
             _, err = db.Exec("INSERT INTO likes (user_id, post_id) VALUES (?, ?)", user.ID, postID)
             if err != nil {
                 fmt.Println(err)
@@ -908,7 +910,6 @@ func main() {
         }
         log.Println("like count:", likeCount)
 
-        // Redirect back to the profile page after liking
         http.Redirect(w, r, fmt.Sprintf("/profile?username=%s", username), http.StatusSeeOther)
     })
 
@@ -919,7 +920,7 @@ func main() {
             return
         }
 
-        loggedUserStr, _ := getLoggedInUser(r) // Get logged-in user ID
+        loggedUserStr, _ := getLoggedInUser(r)
         loggedUserID := strconv.Itoa(getUserID(db, loggedUserStr))
         user := getUserFromString(db, username)
         userID := strconv.Itoa(user.ID)
@@ -953,7 +954,6 @@ func main() {
             return
         }
 
-        // Redirect back to the profile page (refreshes the page)
         http.Redirect(w, r, fmt.Sprintf("/profile?username=%s", username), http.StatusSeeOther)
     })
 
@@ -987,7 +987,6 @@ func main() {
             Posts: post,
         }
 
-        // Assuming you rename your HTML file to "post_details.html"
         postDetailsTmpl, err := template.ParseFiles("post_details.html")
         if err != nil {
             log.Fatal(err)
@@ -1014,7 +1013,7 @@ func main() {
 
         username := r.FormValue("username")
         content := r.FormValue("content")
-        postIDStr := r.URL.Query().Get("post_id") // Get the parent post ID from the query parameter
+        postIDStr := r.URL.Query().Get("post_id")
 
         postID, err := strconv.Atoi(postIDStr)
         if err != nil {
@@ -1035,7 +1034,6 @@ func main() {
             return
         }
 
-        // Insert the reply into the database with parent_post_id
         timestamp := time.Now().Format("3:04:05 PM - Jan 2, 2006")
         _, err = db.Exec(`
         INSERT INTO posts (user_id, parent_post_id, content, timestamp, likes) 
