@@ -252,10 +252,60 @@
         .post-form button:hover {
           background-color: #1a91ea;
         }
-    .post-form textarea {
-        resize: none;
-        overflow:auto;
-    }
+        .post-form textarea {
+          resize: none;
+          overflow:auto;
+        }
+        .follow-btn {
+          padding: 8px 16px;
+          border: 1px solid #1da1f2;
+          border-radius: 20px;
+          cursor: pointer;
+          font-size: 14px;
+          font-weight: bold;
+          transition: background-color 0.2s, color 0.2s;
+          float: right;
+        }
+
+        .follow-btn.following {
+          background-color: white;
+          color: #1da1f2;
+        }
+
+        .follow-btn.not-following {
+          background-color: #1da1f2;
+          color: white;
+        }
+
+        .follow-btn:hover {
+          background-color: #0c85d0;
+          color: white;
+        }
+
+        /* Adjust profile header for right sidebar */
+        .right-sidebar .profile-header {
+          margin-bottom: 15px;
+          padding: 15px;
+        }
+        .right-sidebar .profile-banner {
+          height: 100px; /* Smaller banner for sidebar */
+        }
+        .right-sidebar .profile-pic {
+          width: 60px;
+          height: 60px;
+          top: 70px; /* Adjust position for smaller banner */
+        }
+        .right-sidebar .profile-details h1 {
+          font-size: 16px;
+          margin: 5px 0;
+        }
+        .right-sidebar .profile-details p {
+          font-size: 12px;
+          margin: 2px 0;
+        }
+
+
+
     </style>
 </head>
 <body>
@@ -324,25 +374,32 @@
 
         <div class="right-sidebar">
             <h3>¿A quién seguir?</h3>
-            <div>
-                <p>CartoonOnTheMoon</p>
-                <small>@CartoonOTMoon | Todo sobre cine, animación y cultura geek</small>
-                <button>Seguir</button>
+            {{range .RandomUsers}}
+
+            <div class="profile-header">
+              <div class="profile-banner"></div>
+              <div class="profile-pic" style="background-image: url('https://via.placeholder.com/60?text={{.Username}}')"></div>
+              <div class="edit-profile-sep">
+                <form action="/follow?username={{.Username}}" method="post">
+                  <!-- Check if the logged-in user follows this random user -->
+                  {{ $isFollowing := false }}
+                  {{ range $.LoggedInUser.Follows }} <!-- Fixed: Use Follows instead of Following -->
+                  {{ if eq . $.ID }}
+                  {{ $isFollowing = true }}
+                  {{ end }}
+                  {{ end }}
+                  <button type="submit" class="follow-btn {{ if $isFollowing }}following{{ else }}not-following{{ end }}">
+                    {{ if $isFollowing }} Unfollow {{ else }} Follow {{ end }}
+                  </button>
+                </form>
+              </div>
+              <div class="profile-details">
+                <h1>{{.Name}}</h1>
+                <p>@{{.Username}}</p>
+                <p>{{.Followers}} Followers | {{.Following}} Following</p>
+              </div>
             </div>
-            <div>
-                <p>ShittpostGate</p>
-                <small>@ShittpostGate | Love Shitposting...</small>
-                <button>Seguir</button>
-            </div>
-            <div>
-                <p>Instant Gaming</p>
-                <small>@InstantGamingES | Play Smart / Pay Less</small>
-                <button>Seguir</button>
-            </div>
-            <h3>Qué está pasando</h3>
-            <p>Política - Tendencia | 85.5 mil publicaciones</p>
-            <p>Política - Tendencia | Zelensky sobre Trump | 1.68 mil publicaciones</p>
-            <p>Política - Tendencia | Venezolanos | 30.4 mil publicaciones</p>
+            {{end}}
         </div>
     </div>
 </body>

@@ -32,6 +32,7 @@ type PageData struct {
     LoggedInUser UserData
     IsOwnProfile bool
     IsFollowing bool
+    RandomUsers []UserData
 }
 
 type UserData struct {
@@ -40,6 +41,7 @@ type UserData struct {
     Username  string
     Followers int
     Following int
+    Follows   []int
 }
 
 type PostPageData struct {
@@ -84,6 +86,35 @@ func generateSessionToken() string {
     return base64.URLEncoding.EncodeToString(b)
 }
 
+func getRandomUsersToFollow(db *sql.DB, loggedUserID int) []UserData {
+    var users []UserData
+    rows, err := db.Query(`
+        SELECT id, name, username, followers, following
+        FROM users
+        WHERE id != ?
+        ORDER BY RANDOM()
+        LIMIT 3
+    `, loggedUserID)
+    if err != nil {
+        log.Println("Error fetching random users:", err)
+        return users
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var user UserData
+        err = rows.Scan(&user.ID, &user.Name, &user.Username, &user.Followers, &user.Following)
+        if err != nil {
+            log.Println("Error scanning random user:", err)
+            continue
+        }
+        users = append(users, user)
+    }
+
+    return users
+}
+
+
 func getLoggedInUser(r *http.Request) (string, bool) {
     cookie, err := r.Cookie("session_token")
     if err != nil {
@@ -119,6 +150,26 @@ func getUserFromString(db *sql.DB, userStr string) UserData {
         log.Println("Database error fetching logged-in user", userStr, err)
 
         // Handle logged in database error.
+    }
+
+    // Fetch followed users
+    rows, err := db.Query(`
+        SELECT following_id FROM follows WHERE follower_id = ?
+    `, user.ID)
+    if err != nil {
+        log.Println("Error fetching follows:", err)
+        return user
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var followingID int
+        err = rows.Scan(&followingID)
+        if err != nil {
+            log.Println("Error scanning following ID:", err)
+            continue
+        }
+        user.Follows = append(user.Follows, followingID)
     }
 
     return user
@@ -686,6 +737,8 @@ func main() {
         data := PageData{
             User:  user,
             Posts: getAllPostsWithLoggedUser(db, getUserFromString(db, username)),
+            LoggedInUser: user,
+            RandomUsers:  getRandomUsersToFollow(db, user.ID),
         }
 
         err = homePageTmpl.Execute(w, data)
