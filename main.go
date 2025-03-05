@@ -91,10 +91,11 @@ func getRandomUsersToFollow(db *sql.DB, loggedUserID int) []UserData {
     rows, err := db.Query(`
         SELECT id, name, username, followers, following
         FROM users
-        WHERE id != ?
+        WHERE id != ? 
+        AND id NOT IN (SELECT following_id FROM follows WHERE follower_id = ?)
         ORDER BY RANDOM()
         LIMIT 3
-    `, loggedUserID)
+    `, loggedUserID, loggedUserID)
     if err != nil {
         log.Println("Error fetching random users:", err)
         return users
@@ -110,10 +111,10 @@ func getRandomUsersToFollow(db *sql.DB, loggedUserID int) []UserData {
         }
         users = append(users, user)
     }
+    log.Printf("Fetched %d random users for user ID %d: %+v", len(users), loggedUserID, users)
 
     return users
 }
-
 
 func getLoggedInUser(r *http.Request) (string, bool) {
     cookie, err := r.Cookie("session_token")

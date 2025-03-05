@@ -51,7 +51,6 @@
             background-image: url('https://via.placeholder.com/100?text=Profile+Pic'); /* Replace with actual profile pic URL */
             border-radius: 50%;
             border: 4px solid #000;
-            position: absolute;
             top: 120px; /* Position below banner */
             left: 20px;
         }
@@ -375,29 +374,18 @@
         <div class="right-sidebar">
             <h3>¿A quién seguir?</h3>
             {{range .RandomUsers}}
-
             <div class="profile-header">
-              <div class="profile-banner"></div>
-              <div class="profile-pic" style="background-image: url('https://via.placeholder.com/60?text={{.Username}}')"></div>
-              <div class="edit-profile-sep">
-                <form action="/follow?username={{.Username}}" method="post">
-                  <!-- Check if the logged-in user follows this random user -->
-                  {{ $isFollowing := false }}
-                  {{ range $.LoggedInUser.Follows }} <!-- Fixed: Use Follows instead of Following -->
-                  {{ if eq . $.ID }}
-                  {{ $isFollowing = true }}
-                  {{ end }}
-                  {{ end }}
-                  <button type="submit" class="follow-btn {{ if $isFollowing }}following{{ else }}not-following{{ end }}">
-                    {{ if $isFollowing }} Unfollow {{ else }} Follow {{ end }}
-                  </button>
-                </form>
-              </div>
-              <div class="profile-details">
-                <h1>{{.Name}}</h1>
-                <p>@{{.Username}}</p>
-                <p>{{.Followers}} Followers | {{.Following}} Following</p>
-              </div>
+                <div class="profile-pic" style="background-image: url('https://via.placeholder.com/60?text={{.Username}}')"></div>
+                <div class="profile-details">
+                    <a href="/profile?username={{.Username}}" class="username">{{.Name}}</a>
+                    <span>@{{.Username}}</span>
+                    <p>{{.Followers}} Followers | {{.Following}} Following</p>
+                </div>
+                <div class="edit-profile-sep">
+                    <form action="/follow?username={{.Username}}" method="post">
+                        <button type="submit" class="follow-btn">Follow</button>
+                    </form>
+                </div>
             </div>
             {{end}}
         </div>
