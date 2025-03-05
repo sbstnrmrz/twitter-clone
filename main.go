@@ -47,7 +47,28 @@ type PostPageData struct {
     ErrorMessage string
 }
 
+type PostDetailsPageData struct {
+    ErrorMessage string
+    User         UserData
+    Posts        Post
+    LoggedInUser UserData
+    IsOwnProfile bool
+    IsFollowing bool
+}
+
 type Post struct {
+    ID        int    // Post ID to identify posts for liking
+    Name      string
+    Username  string
+    Content   string
+    Timestamp string
+    Likes     int
+    UserLiked bool
+    ParentPostID sql.NullInt64 // Use sql.NullInt64 to handle NULL values (no parent)
+    Replies     []Post        // Nested replies
+}
+
+type Comment struct {
     ID        int    // Post ID to identify posts for liking
     Name      string
     Username  string
@@ -254,6 +275,68 @@ func likePost(db *sql.DB, loggedUser UserData, postID int) {
 
 }
 
+
+
+func getPostWithReplies(db *sql.DB, postID int, loggedUser UserData) (Post, error) {
+    var post Post
+    err := db.QueryRow(`
+        SELECT p.id, u.name, u.username, p.content, p.timestamp, p.likes, p.parent_post_id
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?
+    `, postID).Scan(&post.ID, &post.Name, &post.Username, &post.Content, &post.Timestamp, &post.Likes, &post.ParentPostID)
+    if err != nil {
+        return Post{}, err
+    }
+
+    // Check if the logged-in user liked this post
+    err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?)", loggedUser.ID, post.ID).Scan(&post.UserLiked)
+    if err != nil {
+        log.Println("Error checking like status:", err)
+    }
+
+    // Fetch replies recursively
+    rows, err := db.Query(`
+        SELECT p.id, u.name, u.username, p.content, p.timestamp, p.likes, p.parent_post_id
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.parent_post_id = ?
+        ORDER BY p.timestamp ASC
+    `, post.ID)
+    if err != nil {
+        return post, err
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var reply Post
+        err = rows.Scan(&reply.ID, &reply.Name, &reply.Username, &reply.Content, &reply.Timestamp, &reply.Likes, &reply.ParentPostID)
+        if err != nil {
+            log.Println("Error scanning reply row:", err)
+            continue
+        }
+
+        // Check if the logged-in user liked this reply
+        err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?)", loggedUser.ID, reply.ID).Scan(&reply.UserLiked)
+        if err != nil {
+            log.Println("Error checking like status for reply:", err)
+        }
+
+        // Recursively fetch replies to this reply
+        replyWithReplies, err := getPostWithReplies(db, reply.ID, loggedUser)
+        if err != nil {
+            log.Println("Error fetching nested replies:", err)
+        } else {
+            reply = replyWithReplies
+        }
+
+
+        post.Replies = append(post.Replies, reply)
+    }
+
+    return post, nil
+}
+
 var sessions = make(map[string]string)
 
 func main() {
@@ -304,6 +387,7 @@ func main() {
     CREATE TABLE IF NOT EXISTS posts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
+        parent_post_id INTEGER REFERENCES posts(id),
         content TEXT NOT NULL,
         timestamp TEXT,
         likes INTEGER DEFAULT 0,
@@ -816,6 +900,99 @@ func main() {
 
         // Redirect back to the profile page (refreshes the page)
         http.Redirect(w, r, fmt.Sprintf("/profile?username=%s", username), http.StatusSeeOther)
+    })
+
+    http.HandleFunc("/post-details", func(w http.ResponseWriter, r *http.Request) {
+        username, loggedIn := getLoggedInUser(r)
+        if !loggedIn {
+            http.Redirect(w, r, "/login", http.StatusSeeOther)
+            return
+        }
+
+        postIDStr := r.URL.Query().Get("post_id")
+        postID, err := strconv.Atoi(postIDStr)
+        if err != nil {
+            http.Error(w, "Invalid post ID", http.StatusBadRequest)
+            return
+        }
+
+        loggedUser := getUserFromString(db, username)
+        post, err := getPostWithReplies(db, postID, loggedUser)
+        if err != nil {
+            log.Println("Error fetching post with replies:", err)
+            http.Error(w, "Post not found", http.StatusNotFound)
+            return
+        }
+
+        user := getUserFromString(db, post.Username)
+
+        data := PostDetailsPageData {
+            User: user,
+            LoggedInUser: loggedUser,
+            Posts: post,
+        }
+
+        // Assuming you rename your HTML file to "post_details.html"
+        postDetailsTmpl, err := template.ParseFiles("post_details.html")
+        if err != nil {
+            log.Fatal(err)
+        }
+
+        err = postDetailsTmpl.Execute(w, data)
+        if err != nil {
+            log.Println("Error rendering post details:", err)
+        }
+    })
+
+    http.HandleFunc("/reply", func(w http.ResponseWriter, r *http.Request) {
+        if r.Method != "POST" {
+            http.Error(w, `{"error": "Method not allowed"}`, http.StatusMethodNotAllowed)
+            return
+        }
+
+        err := r.ParseForm()
+        if err != nil {
+            log.Println("ParseForm error:", err)
+            http.Error(w, `{"error": "Invalid form data"}`, http.StatusBadRequest)
+            return
+        }
+
+        username := r.FormValue("username")
+        content := r.FormValue("content")
+        postIDStr := r.URL.Query().Get("post_id") // Get the parent post ID from the query parameter
+
+        postID, err := strconv.Atoi(postIDStr)
+        if err != nil {
+            http.Error(w, `{"error": "Invalid post ID"}`, http.StatusBadRequest)
+            return
+        }
+
+        var user UserData
+        err = db.QueryRow(`
+        SELECT id 
+        FROM users WHERE username = ?`, username).Scan(&user.ID)
+        if err == sql.ErrNoRows {
+            http.Error(w, "User not found", http.StatusNotFound)
+            return
+        } else if err != nil {
+            log.Println("Database error fetching user for reply", username, err)
+            http.Error(w, "Database error", http.StatusInternalServerError)
+            return
+        }
+
+        // Insert the reply into the database with parent_post_id
+        timestamp := time.Now().Format("3:04:05 PM - Jan 2, 2006")
+        _, err = db.Exec(`
+        INSERT INTO posts (user_id, parent_post_id, content, timestamp, likes) 
+        VALUES (?, ?, ?, ?, ?)`, user.ID, postID, content, timestamp, 0)
+        if err != nil {
+            log.Println("Failed to create reply for user", username, err)
+            http.Error(w, "Failed to create reply", http.StatusInternalServerError)
+            return
+        }
+
+        log.Println("New reply created for post", postID, "by user", username)
+        http.Redirect(w, r, fmt.Sprintf("/post-details?post_id=%d", postID), http.StatusSeeOther)
     })
 
     const port = 8080

@@ -302,8 +302,8 @@
                     <div class="profile-pic" style="background-image: url('https://via.placeholder.com/48?text={{.Username}}')"></div>
                     <div class="post-content">
                         <div class="post-header">
-                            <a href="/profile?username={{.Username}}" class="username">{{.Name}}</a>
-                            <span class="handle">@{{.Username}}</span>
+                          <!--                            <a href="/profile?username={{.Username}}" class="username">{{.Name}}</a> -->
+                          <a href="/post-details?post_id={{.ID}}" class="username">{{.Name}}</a>                            <span class="handle">@{{.Username}}</span>
                         </div>
                         <div class="post-container">
                           <p class="post-text">{{.Content}}</p>

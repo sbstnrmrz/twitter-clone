@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.User.Name}}(@{{.User.Username}}) - Twitter</title>
+    <title>Home - Twitter</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -89,6 +90,7 @@
             gap: 5px;
             margin-bottom: 5px;
         }
+
         .post-header .username {
             text-decoration: none;
             display: unset;
@@ -107,7 +109,6 @@
             color: #71767b;
             font-size: 14px;
         }
-
 
         .post-container {
           max-width: 600px;  /* Adjust based on your layout */
@@ -181,6 +182,7 @@
             background-color: #1a1a1a;
             color: #1d9bf0;
         }
+
         .nav-item {
             display: flex;
             align-items: center;
@@ -196,75 +198,73 @@
             fill: #1d9bf0; /* Change fill color on hover to match Twitter blue */
         }
         .notification-badge {
-            background-color: #1d9bf0;
-            color: #000;
-            border-radius: 10px;
-            padding: 2px 6px;
-            font-size: 12px;
-            margin-left: 5px;
+          background-color: #1d9bf0;
+          color: #000;
+          border-radius: 10px;
+          padding: 2px 6px;
+          font-size: 12px;
+          margin-left: 5px;
         }
         /* Styling for the Post button (rounded rectangle under sidebar) */
         .post-button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background-color: #1d9bf0;
-            color: #fff;
-            border: none;
-            border-radius: 20px; /* Rounded rectangle */
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 10px;
-            text-align: center;
-            text-decoration: none;
+          display: block;
+          width: 100%;
+          padding: 10px;
+          background-color: #1d9bf0;
+          color: #fff;
+          border: none;
+          border-radius: 20px; /* Rounded rectangle */
+          font-size: 16px;
+          cursor: pointer;
+          margin-top: 10px;
+          text-align: center;
+          text-decoration: none;
         }
         .post-button:hover {
-            background-color: #1a91ea;
+          background-color: #1a91ea;
         }
-/*
-        #profile-link {
-            color: #fff;
-            text-decoration: none;
-            display: unset;
-            padding: unset;
-            margin: unset;
+        .post-form {
+          background-color: #1a1a1a;
+          padding: 15px;
+          margin-bottom: 15px;
+          border-radius: 10px;
         }
 
-        #profile-link:hover {
-            color: #fff;
-            text-decoration: underline;
-            display: unset;
-            padding: unset;
-            margin: unset;
+        .post-form textarea {
+          width: 97%;
+          padding: 10px;
+          margin-bottom: 10px;
+          border: 1px solid #333;
+          border-radius: 5px;
+          background-color: #000;
+          color: #fff;
+          resize: vertical;
+
         }
-        */
 
-
-        .follow-btn {
-          padding: 8px 16px;
-          border: 1px solid #1da1f2;
-          border-radius: 20px;
+        .post-form button {
+          background-color: #1d9bf0;
+          color: white;
+          padding: 10px 15px;
+          border: none;
+          border-radius: 5px;
           cursor: pointer;
-          font-size: 14px;
-          font-weight: bold;
-          transition: background-color 0.2s, color 0.2s;
-          float: right;
         }
 
-        .follow-btn.following {
-          background-color: white;
-          color: #1da1f2;
+        .post-form button:hover {
+          background-color: #1a91ea;
         }
+    .post-form textarea {
+        resize: none;
+        overflow:auto;
+    }
 
-        .follow-btn.not-following {
-          background-color: #1da1f2;
-          color: white;
-        }
+    .reply {
+      margin-left: 60px; /* Indent replies */
+      border-left: 2px solid #333; /* Optional: visual threading line */
+      padding-left: 10px;
+    }
 
-        .follow-btn:hover {
-          background-color: #0c85d0;
-          color: white;
-        }
     </style>
 </head>
 <body>
@@ -281,7 +281,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                 </svg>
                 Messages
-            <a href="/profile?username={{.LoggedInUser.Username}}" class="nav-item">
+            <a href="/profile?username={{.User.Username}}" class="nav-item">
                 <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                 </svg>
@@ -293,35 +293,70 @@
               </svg>
               Log out
             </a>
-            <!-- Post button under sidebar as a rounded rectangle -->
             <a href="/post?username={{.LoggedInUser.Username}}" class="post-button">Post</a>
         </div>
 
         <div class="main-content">
-            <div class="profile-header">
-                <div class="profile-banner"></div>
-                <div class="profile-pic"></div>
-                <div class="edit-profile-sep">
-                  {{if .IsOwnProfile}}
-                    <button id="edit-profile">Editar perfil</button>
-                  {{else}}
-                    <form action="/follow?username={{.User.Username}}" method="post">
-                      <button type="submit" 
-                              class="follow-btn {{ if .IsFollowing }}following{{ else }}not-following{{ end }}">
-                        {{ if .IsFollowing }} Unfollow {{ else }} Follow {{ end }}
-                      </button>
-                    </form>
-                  {{end}}
-                </div>
-                <div class="profile-details">
-                    <h1>{{.User.Name}}</h1>
-                    <p>@{{.User.Username}}</p>
-                    <p>{{.User.Followers}} Followers | {{.User.Following}} Following</p>
+            <div class="posts">
+                <div class="post">
+                    <div class="profile-pic" style="background-image: url('https://via.placeholder.com/48?text={{.User.Username}}')"></div>
+                    <a href="#" style="all: unset; position: absolute; width: 655px; height: 110px; z-index: -1;">
+                      <div class="post-content">
+                        <div class="post-header">
+                          <a href="/profile?username={{.User.Username}}" class="username">{{.User.Name}}</a>
+                          <span class="handle">@{{.User.Username}}</span>
+                        </div>
+                        <div class="post-container">
+                          <p class="post-text" style="pointer-events: visible;">{{.Posts.Content}}</p>
+                        </div>
+                        <div class="post-meta">{{.Posts.Timestamp}}</div>
+                        <div class="post-actions">
+                          <form action="/like" method="post">
+                            <input type="hidden" name="post_id" value="{{.Posts.ID}}">
+                            <input type="hidden" name="username" value="{{.User.Username}}">
+                            <button type="submit" {{if .Posts.UserLiked}}style="color: #f91880;"{{end}}>{{.Posts.Likes}}</button>
+                          </form>
+                        </div>
+                      </div>
+                    </a>
                 </div>
             </div>
-            <div class="posts">
-                {{range .Posts}}
-                <div class="post">
+
+
+
+            <div class="post-form">
+              <form action="/reply?post_id={{.Posts.ID}}" method="post">
+                    <input type="hidden" name="username" value="{{.LoggedInUser.Username}}">
+                    <textarea name="content" placeholder="Post your reply" required></textarea>
+                    <button type="submit">Reply</button>
+                </form>
+            </div>
+
+            {{range .Posts.Replies}}
+            <div class="post">
+                <div class="profile-pic" style="background-image: url('https://via.placeholder.com/48?text={{.Username}}')"></div>
+                <div class="post-content">
+                    <div class="post-header">
+                        <a href="/profile?username={{.Username}}" class="username">{{.Name}}</a>
+                        <span class="handle">@{{.Username}}</span>
+                    </div>
+                    <div class="post-container">
+                        <p class="post-text">{{.Content}}</p>
+                    </div>
+                    <div class="post-meta">{{.Timestamp}}</div>
+                    <div class="post-actions">
+                        <form action="/like" method="post">
+                            <input type="hidden" name="post_id" value="{{.ID}}">
+                            <input type="hidden" name="username" value="{{.Username}}">
+                            <button type="submit" {{if .UserLiked}}style="color: #f91880;"{{end}}>{{.Likes}}</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Nested Replies (Recursive) -->
+                {{if .Replies}}
+                {{range .Replies}}
+                <div class="post reply">
                     <div class="profile-pic" style="background-image: url('https://via.placeholder.com/48?text={{.Username}}')"></div>
                     <div class="post-content">
                         <div class="post-header">
@@ -329,20 +364,23 @@
                             <span class="handle">@{{.Username}}</span>
                         </div>
                         <div class="post-container">
-                          <p class="post-text">{{.Content}}</p>
+                            <p class="post-text">{{.Content}}</p>
                         </div>
                         <div class="post-meta">{{.Timestamp}}</div>
                         <div class="post-actions">
                             <form action="/like" method="post">
                                 <input type="hidden" name="post_id" value="{{.ID}}">
-                                <input type="hidden" name="username" value="{{.Username}}">
+                                <input type="hidden" name="username" value="{{.User.Username}}">
                                 <button type="submit" {{if .UserLiked}}style="color: #f91880;"{{end}}>{{.Likes}}</button>
                             </form>
                         </div>
                     </div>
                 </div>
                 {{end}}
+                {{end}}
             </div>
+            {{end}}
+
         </div>
 
         <div class="right-sidebar">
