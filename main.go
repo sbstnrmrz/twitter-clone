@@ -292,6 +292,7 @@ func getAllPostsWithLoggedUser(db *sql.DB, loggedUser UserData) []Post {
         SELECT p.id, u.id, u.name, u.username, p.content, p.timestamp, p.likes 
         FROM posts p
         JOIN users u ON p.user_id = u.id
+        WHERE p.parent_post_id IS NULL
         ORDER BY p.timestamp DESC
     `)
     if err != nil {
