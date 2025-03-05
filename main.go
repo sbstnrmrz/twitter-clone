@@ -602,6 +602,7 @@ func main() {
             LoggedInUser: loggedInUser,
             IsFollowing: isFollowing,
             IsOwnProfile: isOwnProfile,
+            RandomUsers: getRandomUsersToFollow(db, loggedInUser.ID),
         }
 
         fmt.Println("is own profile:", isOwnProfile)
@@ -612,7 +613,6 @@ func main() {
             log.Println(err)
         }
     })
-
 
     http.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
         cookie, err := r.Cookie("session_token")
